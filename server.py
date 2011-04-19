@@ -14,21 +14,21 @@ class ChatServer():
     def __init__(self, port):
         self.clients = {}
         self.port = port
-        self.socket = ReadWriteSocket()
+        self.server_socket = ReadWriteSocket()
         self.keep_running = False
     
     def start(self):
-        self.socket.bind(('', self.port))
-        self.socket.listen(5)
+        self.server_socket.bind(('', self.port))
+        self.server_socket.listen(5)
         print "Listening for connections..."
         self.keep_running = True
-        sockets = [self.socket]
+        sockets = [self.server_socket]
         nicknames = {}
         while self.keep_running:
             readable, writable, error = select.select(sockets, [], [])
             if len(readable) > 0:
                 for sock in readable:
-                    if sock is self.socket:
+                    if sock is self.server_socket:
                         print "New client accepted."
                         (client_socket, address) = sock.accept()
                         sockets.append(client_socket)
@@ -45,6 +45,9 @@ class ChatServer():
                             sockets.remove(sock)
                             print "Client disconnected."
                         else:
+                            for client_socket in sockets:
+                                if not client_socket is self.server_socket:
+                                    client_socket.write("[%s]> %s" % (nicknames[sock], msg))
                             print msg
         for socket in sockets:
             socket.close()    

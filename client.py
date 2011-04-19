@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import select, socket, sys, threading
+import select, socket, sys, threading, time
 
 from mysocket import ReadWriteSocket
 
@@ -20,30 +20,26 @@ class ChatClient():
         nickname = None
         print prompt
         
-        readables = [self.sock, sys.stdin]
+        while self.keep_running and nickname is None:
+            nickname = sys.stdin.readline().strip()
+            self.sock.write(nickname)
+            reply = self.sock.readnext()
+            print reply
+            if not reply.startswith("ERROR"):
+                break
+        
+        threading.Thread(target=self.server_handler).start()
         while self.keep_running:
-            readable, writeable, error = select.select(readables, [], [])
-            for r in readable:
-                if r is sys.stdin:
-                    msg = r.readline().strip()
-                    if not initialized:
-                        nickname = msg
-                        readables.remove(sys.stdin)
-                    else:
-                        print prompt
-                    self.sock.write(msg)
-                elif r is self.sock:
-                    msg = r.readnext()
-                    if not initialized and not msg.startswith("ERROR"):
-                        prompt = "[%s]> " % nickname
-                        initialized = True
-                        readables.append(sys.stdin)
-                    else:
-                        print msg
-                else:
-                    import ipdb; ipdb.set_trace()
-                    raise Exception("I have no idea what this readable socket is.")
-        self.sock.close()
+            sys.stdout.write(">")
+            msg = sys.stdin.readline().strip()
+            if msg != "":
+                self.sock.write(msg)
+
+    def server_handler(self):
+        while self.keep_running:
+            readables, writables, error = select.select([self.sock], [], [], 1)
+            for s in readables:
+                print s.readnext()
 
 
 if __name__ == "__main__":

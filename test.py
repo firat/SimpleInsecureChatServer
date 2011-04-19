@@ -8,4 +8,7 @@ def test_func():
         print "Hello"
 
 if __name__ == "__main__":
-    threading.Thread(target=test_func).start()
+    # threading.Thread(target=test_func).start()
+    sys.stdout.write("1")
+    sys.stdout.write("\r")
+    sys.stdout.write("2\n")
